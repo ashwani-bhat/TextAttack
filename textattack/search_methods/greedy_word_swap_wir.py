@@ -27,19 +27,20 @@ class GreedyWordSwapWIR(SearchMethod):
 
     def __init__(self, wir_method="unk"):
         self.wir_method = wir_method
+        print('Initializing GreedyWordSwapWIR with wir_method =', wir_method)
 
-    def _get_index_order(self, initial_text):
+    def _get_index_order(self, wir_method, initial_text):
         """Returns word indices of ``initial_text`` in descending order of
         importance."""
         len_text = len(initial_text.words)
 
-        if self.wir_method == "unk":
+        if wir_method == "unk":
             leave_one_texts = [
                 initial_text.replace_word_at_index(i, "[UNK]") for i in range(len_text)
             ]
             leave_one_results, search_over = self.get_goal_results(leave_one_texts)
             index_scores = np.array([result.score for result in leave_one_results])
-        elif self.wir_method == "weighted-saliency":
+        elif wir_method == "weighted-saliency":
             # first, compute word saliency
             leave_one_texts = [
                 initial_text.replace_word_at_index(i, "[UNK]") for i in range(len_text)
@@ -67,21 +68,29 @@ class GreedyWordSwapWIR(SearchMethod):
                 delta_ps.append(max_score_change)
 
             index_scores = softmax_saliency_scores * np.array(delta_ps)
-        elif self.wir_method == "delete":
+        elif wir_method == "delete":
             leave_one_texts = [
                 initial_text.delete_word_at_index(i) for i in range(len_text)
             ]
             leave_one_results, search_over = self.get_goal_results(leave_one_texts)
             index_scores = np.array([result.score for result in leave_one_results])
-        elif self.wir_method == "random":
-            index_order = np.arange(len_text)
-            np.random.shuffle(index_order)
+        elif wir_method == "random":
+            index_scores = np.random.rand(len_text)
+            search_over = False
+        elif wir_method == 'bert_blackbox':
+            import textattack
+            
+            leave_one_texts = [
+                initial_text.replace_word_at_index(i, "[UNK]") for i in range(len_text)
+            ]
+            encoder_constraint = textattack.constraints.semantics.sentence_encoders.BERT()
+            index_scores = - encoder_constraint._score_list(initial_text, leave_one_texts)
             search_over = False
         else:
             raise ValueError(f"Unsupported WIR method {self.wir_method}")
-
-        if self.wir_method != "random":
-            index_order = (-index_scores).argsort()
+        
+        # Sort indices in order of decreasing 'importance'.
+        index_order = (-index_scores).argsort()
 
         return index_order, search_over
 
@@ -89,7 +98,7 @@ class GreedyWordSwapWIR(SearchMethod):
         attacked_text = initial_result.attacked_text
 
         # Sort words by order of importance
-        index_order, search_over = self._get_index_order(attacked_text)
+        index_order, search_over = self._get_index_order(self.wir_method, attacked_text)
 
         i = 0
         cur_result = initial_result
