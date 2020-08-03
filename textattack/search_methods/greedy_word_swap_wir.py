@@ -77,6 +77,11 @@ class GreedyWordSwapWIR(SearchMethod):
             index_order = np.arange(len_text)
             np.random.shuffle(index_order)
             search_over = False
+        elif self.wir_method == "olm":
+          print("Inside WIR (OLM)")
+          # perform word retrieval
+          # index_scores = 
+        
         else:
             raise ValueError(f"Unsupported WIR method {self.wir_method}")
 
