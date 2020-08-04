@@ -10,7 +10,7 @@ from textattack.shared.attack import Attack
 from textattack.transformations import WordSwapMaskedLM
 
 print("Inside OLM")
-def BERTAttackLi2020(model):
+def OLMattack(model):
     """Li, L.., Ma, R., Guo, Q., Xiangyang, X., Xipeng, Q. (2020).
     BERT-ATTACK: Adversarial Attack Against BERT Using BERT
     https://arxiv.org/abs/2004.09984
